@@ -1,8 +1,7 @@
 # OCR (Optical Character Recognision)
 Making an app to turn a photo into a text using the ocr transformations. 
-The main usecase would be:
 
-scanning in tickets and bills to easily transfer facturations received on paper to digital "copies".
+Specifically aimed towards an implementation in accountingsoftware. Invoices received on paper can easily translated in their digital equivalent, extracting only the important information (such as the date of payment, the total price, name of company, VAT number, ...).
 
 
 ## Used tech
