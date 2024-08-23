@@ -65,11 +65,12 @@ def find_total_and_date(text):
     # \s*:?\ 
     #       L> \s* = a amount of spaces or tabs, amount not specified so "*"
     #       L> :?  = followed by an optional (= "?"-sign) ":"-sign 
-    total_pattern = re.compile(r'(total|totaal)\s*:?\s*\€?\s*([\d.,]+)', re.IGNORECASE)
-    # date_pattern = re.compile(r'(datum)\s*:?(\d{2}/\d{2}/\d{4}  |   \d{2}-\d{2}-\d{4}   |   \d{2}\.\d{2}\.\d{4})', re.IGNORECASE)
-    date_pattern = re.compile(r'\s*(datum)\s*:?(\d{2}/\d{2}/\d{4}\s*\d{2}:\d{2})', re.IGNORECASE)
+    total_pattern = re.compile(r'(?:total|totaal)\s*:?\s*\€?\s*([\d.,]+)', re.IGNORECASE)
 
-    
+    # date_pattern = re.compile(r'(datum)\s*:?(\d{2}/\d{2}/\d{4}  |   \d{2}-\d{2}-\d{4}   |   \d{2}\.\d{2}\.\d{4})', re.IGNORECASE)
+    # date_pattern = re.compile(r'\s*(Datum)\s*:?(\d{2}/\d{2}/\d{4}\s*\d{2}:\d{2})', re.IGNORECASE)
+    date_pattern = re.compile(r'\bDatum\s*:\s*(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2})', re.IGNORECASE)
+
     # Find total price
     total_matches = total_pattern.findall(text)
     # "if total_matches" is checking if total_matches is non-empty*
@@ -80,6 +81,49 @@ def find_total_and_date(text):
     date = date_matches[0] if date_matches else "Date not found"
     
     return total_price, date
+
+# Finding the BTW percentage is a little harder than the total price and date
+# it could be that the BTW string and BTW percentage are on the same line and this would be ideal
+# since this would require only one regex command, much like with the total price and date
+# but since in the example receipt the BTW string and the BTW percentage are not in the same line
+# we need to search the nearby lines instead of the current line (previous and next lines)
+
+def find_btw_percentage(text):
+    # Pattern to capture "BTW" and the nearby percentage (within the same line or next/previous line)
+    btw_pattern = re.compile(r'BTW.*?(\d{1,2},?\d{0,2})\s*%', re.IGNORECASE | re.DOTALL)
+    
+    # Initialize an empty list to collect matches
+    btw_matches = []
+    
+    # Split text into lines for processing
+    lines = text.splitlines()
+    
+    # Loop through lines to find matches
+    for i, line in enumerate(lines):
+        # Look for "BTW" on the current line
+        match = btw_pattern.search(line)
+        
+        if match:
+            # Extract the percentage value from the match
+            # with the value being on the same line as the string
+            btw_matches.append(match.group(1))
+
+        else:
+            # value and string not being in the same line
+            # Check the previous line and the next line for the percentage
+            if i > 0:
+                previous_line_match = re.search(r'(\d{1,2},?\d{0,2})\s*%', lines[i-1])
+                if previous_line_match and 'BTW' in line:
+                    btw_matches.append(previous_line_match.group(1))
+            if i < len(lines) - 1:
+                next_line_match = re.search(r'(\d{1,2},?\d{0,2})\s*%', lines[i+1])
+                if next_line_match and 'BTW' in line:
+                    btw_matches.append(next_line_match.group(1))
+
+    # If matches found, return the first match (assuming only one BTW percentage is needed)
+    return btw_matches[0] if btw_matches else "BTW Percentage not found"
+
+
 
 def log_extracted_text(text, total, date):
     # Log the extracted text with a timestamp
@@ -98,9 +142,11 @@ with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
 
 extracted_text = extract_text_from_image(temp_file_path)
 total_price, date = find_total_and_date(extracted_text)
+btw_percentage = find_btw_percentage(extracted_text)
 
 # log_extracted_text(extracted_text, total_price, date)
 
 print("Extracted Text:\n", extracted_text)
 print("Total Price:", total_price)
 print("Date:", date)
+print("BTW:", btw_percentage, "%")
