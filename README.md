@@ -8,3 +8,4 @@ Specifically aimed towards an implementation in accountingsoftware. Invoices rec
 * open-cv: preprocessing the image
 * Tesseract (pytesseract): doing the actual ocr stuff
 * android studio: framework for the app 
+
